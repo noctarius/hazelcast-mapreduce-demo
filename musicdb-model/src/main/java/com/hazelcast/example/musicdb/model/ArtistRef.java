@@ -1,0 +1,121 @@
+/*
+ * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hazelcast.example.musicdb.model;
+
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ArtistRef extends SerializableModel {
+
+    private long artistId;
+    private String name;
+    private String nameVariation;
+    private String join;
+    private String role;
+    private final List<String> tracks = new ArrayList<>();
+
+    public long getArtistId() {
+        return artistId;
+    }
+
+    public void setArtistId(long artistId) {
+        this.artistId = artistId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getNameVariation() {
+        return nameVariation;
+    }
+
+    public void setNameVariation(String nameVariation) {
+        this.nameVariation = nameVariation;
+    }
+
+    public String getJoin() {
+        return join;
+    }
+
+    public void setJoin(String join) {
+        this.join = join;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public List<String> getTracks() {
+        return tracks;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeLong(artistId);
+        out.writeUTF(name);
+        out.writeUTF(nameVariation);
+        out.writeUTF(join);
+        out.writeUTF(role);
+        out.writeInt(tracks.size());
+        for (String track : tracks) {
+            out.writeUTF(track);
+        }
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        artistId = in.readLong();
+        name = in.readUTF();
+        nameVariation = in.readUTF();
+        join = in.readUTF();
+        role = in.readUTF();
+        int size = in.readInt();
+        for (int i = 0; i < size; i++) {
+            tracks.add(in.readUTF());
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ArtistRef artistRef = (ArtistRef) o;
+
+        if (artistId != artistRef.artistId) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (artistId ^ (artistId >>> 32));
+    }
+}
