@@ -16,23 +16,23 @@
 
 package com.hazelcast.example.musicdb.parsers;
 
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
-import com.hazelcast.nio.serialization.SerializationServiceBuilder;
-import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
-
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
 import javax.xml.stream.Location;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.*;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.Characters;
+import javax.xml.stream.events.EndElement;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
 import java.io.Writer;
 import java.lang.reflect.Array;
-import java.nio.ByteOrder;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 public abstract class StaxParser<T> {
 
@@ -41,83 +41,57 @@ public abstract class StaxParser<T> {
     private final StartElementAdapter startElementAdapter = new StartElementAdapter();
     private final XMLEventAdapter xmlEventAdapter = new XMLEventAdapter();
 
-    private final SerializationService ss;
-
-    private final List<T> result;
     private final boolean dryRun;
     private final Class<T> type;
 
     private boolean cancel = false;
 
-    private int elementCount;
-    private long byteSize;
-
     protected StaxParser(boolean dryRun, Class<T> type) {
-        this.result = new ArrayList<>(1000000);
         this.dryRun = dryRun;
         this.type = type;
-
-        try {
-            SerializationServiceBuilder builder = new SerializationServiceBuilder();
-            ss = builder.setAllowUnsafe(true)
-                    .setClassLoader(StaxParser.class.getClassLoader())
-                    .setEnableCompression(true)
-                    .setPartitioningStrategy(new DefaultPartitioningStrategy())
-                    .setCheckClassDefErrors(true)
-                    .setByteOrder(ByteOrder.BIG_ENDIAN)
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected void pushElement(T element) {
-        elementCount++;
-        Data data = ss.toData(element);
-        byteSize += data.getHeapCost();
-        if (!dryRun) {
-            result.add(element);
-        }
-        if (elementCount % 10000 == 0) {
-            System.out.println("Collected " + elementCount + " elements");
-        }
     }
 
     protected void cancel() {
         cancel = true;
     }
 
-    protected abstract XMLEvent startElement(String name, StartElement element, XMLEventReader reader) throws Exception;
+    protected abstract XMLEvent startElement(String name, StartElement element,
+                                             XMLEventReader reader, ParserTarget<T> target) throws Exception;
 
-    protected abstract XMLEvent endElement(String name, EndElement element, XMLEventReader reader) throws Exception;
+    protected abstract XMLEvent endElement(String name, EndElement element,
+                                           XMLEventReader reader, ParserTarget<T> target) throws Exception;
 
     public final ParserResult<T> parse(InputStream is) throws Exception {
+        return parse(is, new CollectingParserTarget<T>(dryRun));
+    }
+
+    public final ParserResult<T> parse(InputStream is, ParserTarget<T> target) throws Exception {
         XMLInputFactory factory = XMLInputFactory.newFactory();
         XMLEventReader reader = factory.createXMLEventReader(is);
 
         while (reader.hasNext()) {
             XMLEvent event = reader.nextEvent();
-            handleEvent(event, reader);
+            handleEvent(event, reader, target);
 
             if (cancel) {
                 break;
             }
         }
-        return new ParserResult<T>(elementCount, byteSize, result, type);
+        return new ParserResult<>(target.getElementCount(), target.getElements(), type);
     }
 
-    private void handleEvent(XMLEvent event, XMLEventReader reader) throws Exception {
+    private void handleEvent(XMLEvent event, XMLEventReader reader, ParserTarget<T> target) throws Exception {
         XMLEvent nextEvent = null;
         if (event.isStartElement()) {
             xmlEventAdapter.setEvent(event);
             StartElement element = xmlEventAdapter.asStartElement();
             String name = element.getName().getLocalPart();
             elementStack.push(name);
-            nextEvent = startElement(name, element, reader);
+            nextEvent = startElement(name, element, reader, target);
         } else if (event.isEndElement()) {
             EndElement element = event.asEndElement();
             String name = element.getName().getLocalPart();
-            nextEvent = endElement(name, element, reader);
+            nextEvent = endElement(name, element, reader, target);
 
             Set<String> attributes = startElementAdapter.attributes;
             Iterator<Attribute> iterator = startElementAdapter.element.getAttributes();
@@ -131,7 +105,7 @@ public abstract class StaxParser<T> {
             elementStack.pop();
         }
         if (nextEvent != null && !cancel) {
-            handleEvent(nextEvent, reader);
+            handleEvent(nextEvent, reader, target);
         }
     }
 

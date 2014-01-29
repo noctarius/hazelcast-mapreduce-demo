@@ -50,7 +50,8 @@ public class LabelStaxParser extends StaxParser<Label> {
     }
 
     @Override
-    protected XMLEvent startElement(String name, StartElement element, XMLEventReader reader) throws Exception {
+    protected XMLEvent startElement(String name, StartElement element,
+                                    XMLEventReader reader, ParserTarget<Label> target) throws Exception {
         String previousElement = elementStack.peek(1);
         switch (name) {
             case LABEL:
@@ -123,11 +124,12 @@ public class LabelStaxParser extends StaxParser<Label> {
     }
 
     @Override
-    protected XMLEvent endElement(String name, EndElement element, XMLEventReader reader) {
+    protected XMLEvent endElement(String name, EndElement element,
+                                  XMLEventReader reader, ParserTarget<Label> target) {
         String previousElement = elementStack.peek(1);
         if (LABEL.equals(name)) {
             if (LABELS.equals(previousElement)) {
-                pushElement(label);
+                target.pushElement(label);
                 label = null;
             }
         }

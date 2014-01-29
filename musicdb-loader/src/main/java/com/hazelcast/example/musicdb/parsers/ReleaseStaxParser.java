@@ -80,7 +80,8 @@ public class ReleaseStaxParser extends StaxParser<Release> {
     }
 
     @Override
-    protected XMLEvent startElement(String name, StartElement element, XMLEventReader reader) throws Exception {
+    protected XMLEvent startElement(String name, StartElement element,
+                                    XMLEventReader reader, ParserTarget<Release> target) throws Exception {
         String previousElement = elementStack.peek(1);
         switch (name) {
             case RELEASE:
@@ -264,13 +265,14 @@ public class ReleaseStaxParser extends StaxParser<Release> {
     }
 
     @Override
-    protected XMLEvent endElement(String name, EndElement element, XMLEventReader reader) throws Exception {
+    protected XMLEvent endElement(String name, EndElement element,
+                                  XMLEventReader reader, ParserTarget<Release> target) throws Exception {
         String previousElement = elementStack.peek(1);
         if (RELEASE.equals(name)) {
             if (sampleSetSize > 0 && ++currentSampleSetSize == sampleSetSize) {
                 cancel();
             }
-            pushElement(release);
+            target.pushElement(release);
             release = null;
         } else if (VIDEO.equals(name)) {
             release.getVideos().add(video);

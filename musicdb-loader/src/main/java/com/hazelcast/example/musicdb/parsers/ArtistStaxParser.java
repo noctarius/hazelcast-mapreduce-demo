@@ -51,7 +51,8 @@ public class ArtistStaxParser extends StaxParser<Artist> {
     }
 
     @Override
-    protected XMLEvent startElement(String name, StartElement element, XMLEventReader reader) throws Exception {
+    protected XMLEvent startElement(String name, StartElement element,
+                                    XMLEventReader reader, ParserTarget<Artist> target) throws Exception {
         String previousElement = elementStack.peek(1);
         switch (name) {
             case ARTIST:
@@ -126,9 +127,10 @@ public class ArtistStaxParser extends StaxParser<Artist> {
     }
 
     @Override
-    protected XMLEvent endElement(String name, EndElement element, XMLEventReader reader) {
+    protected XMLEvent endElement(String name, EndElement element,
+                                  XMLEventReader reader, ParserTarget<Artist> target) {
         if (ARTIST.equals(name)) {
-            pushElement(artist);
+            target.pushElement(artist);
             artist = null;
         }
         return null;

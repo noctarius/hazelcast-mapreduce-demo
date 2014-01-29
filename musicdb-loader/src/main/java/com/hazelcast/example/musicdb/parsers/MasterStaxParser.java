@@ -65,7 +65,8 @@ public class MasterStaxParser extends StaxParser<Master> {
     }
 
     @Override
-    protected XMLEvent startElement(String name, StartElement element, XMLEventReader reader) throws Exception {
+    protected XMLEvent startElement(String name, StartElement element,
+                                    XMLEventReader reader, ParserTarget<Master> target) throws Exception {
         String previousElement = elementStack.peek(1);
         switch (name) {
             case MASTER:
@@ -192,9 +193,10 @@ public class MasterStaxParser extends StaxParser<Master> {
     }
 
     @Override
-    protected XMLEvent endElement(String name, EndElement element, XMLEventReader reader) {
+    protected XMLEvent endElement(String name, EndElement element,
+                                  XMLEventReader reader, ParserTarget<Master> target) {
         if (MASTER.equals(name)) {
-            pushElement(master);
+            target.pushElement(master);
             master = null;
         } else if (VIDEO.equals(name)) {
             master.getVideos().add(video);

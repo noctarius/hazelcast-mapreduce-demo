@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.hazelcast.example.musicdb.gui.step;
+package com.hazelcast.example.musicdb.gui.window;
 
 import com.googlecode.lanterna.gui.Window;
 import com.googlecode.lanterna.gui.component.Label;
 import com.googlecode.lanterna.gui.component.ProgressBar;
 
-public class TestChecksumWindow extends Window {
+public class SingleProgressWindow extends Window {
 
     private final Label fileName;
     private final ProgressBar fileStatus;
     private final ProgressBar totalStatus;
 
-    public TestChecksumWindow() {
-        super("Checking checksums");
+    public SingleProgressWindow(String title) {
+        super(title);
         this.fileName = new Label("");
         this.addComponent(this.fileName);
         this.fileStatus = new ProgressBar(60);

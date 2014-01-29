@@ -21,6 +21,7 @@ import com.googlecode.lanterna.gui.Window;
 import com.hazelcast.example.musicdb.gui.ProgressFileInputStream;
 import com.hazelcast.example.musicdb.gui.Step;
 import com.hazelcast.example.musicdb.gui.StepOperation;
+import com.hazelcast.example.musicdb.gui.window.SingleProgressWindow;
 
 import java.io.File;
 import java.io.FileReader;
@@ -38,11 +39,10 @@ public class TestChecksumStep extends Step {
 
     private static final Pattern CHECKSUM_PATTERN = Pattern.compile("discogs_([0-9]*)_CHECKSUM\\.txt");
 
-    private volatile TestChecksumWindow window;
+    private final SingleProgressWindow window = new SingleProgressWindow("Checking checksums");
 
     @Override
     public Window createWindow() {
-        this.window = new TestChecksumWindow();
         return window;
     }
 
@@ -103,15 +103,18 @@ public class TestChecksumStep extends Step {
                     }
 
                     finished += checksum.fileLength;
+                    dis.close();
 
                     byte[] data = digest.digest();
                     if (!Arrays.equals(data, checksum.checksum)) {
-                        throw new RuntimeException("Checksum of file " + checksum.fileName
+                        getContext().put("error", "Checksum of file " + checksum.fileName
                                 + " does not match, please try to re-download");
+                        transition("error");
+                        return;
                     }
                 }
 
-                transition();
+                transition("success");
             }
         };
     }

@@ -26,9 +26,17 @@ public class StepTransition {
 
     private final Map<String, StepTransition> transitions = new HashMap<>();
 
+    public StepTransition(Step step) {
+        this("default", step);
+    }
+
     public StepTransition(String name, Step step) {
         this.name = name;
         this.step = step;
+    }
+
+    public StepTransition addTransition(Step step) {
+        return addTransition("default", step);
     }
 
     public StepTransition addTransition(String name, Step step) {

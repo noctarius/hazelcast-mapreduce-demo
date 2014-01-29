@@ -18,30 +18,28 @@ package com.hazelcast.example.musicdb.parsers;
 
 import java.util.List;
 
-public class ParserResult<T> {
+public abstract class ParserTarget<T> {
 
-    private final int elementCount;
-    private final List<T> result;
-    private final Class<T> type;
+    private boolean dryRun;
 
-    public ParserResult(int elementCount, List<T> result, Class<T> type) {
-        this.elementCount = elementCount;
-        this.result = result;
-        this.type = type;
+    private volatile int elementCount;
+
+    public ParserTarget(boolean dryRun) {
+        this.dryRun = dryRun;
     }
 
     public int getElementCount() {
         return elementCount;
     }
 
-    public List<T> getResult() {
-        return result;
+    void pushElement(T element) {
+        elementCount++;
+        if (!dryRun) {
+            onNewElement(element);
+        }
     }
 
-    @Override
-    public String toString() {
-        return "{ elementCount: " + getElementCount()
-                + ", type: " + type.getSimpleName() + " }";
-    }
+    public abstract List<T> getElements();
 
+    protected abstract void onNewElement(T element);
 }

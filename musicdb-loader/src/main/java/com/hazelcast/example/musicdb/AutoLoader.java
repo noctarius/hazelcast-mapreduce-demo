@@ -21,12 +21,15 @@ import com.googlecode.lanterna.gui.GUIScreen;
 import com.hazelcast.example.musicdb.gui.ProcessManager;
 import com.hazelcast.example.musicdb.gui.StepTransition;
 import com.hazelcast.example.musicdb.gui.step.AvailableDataSetStep;
+import com.hazelcast.example.musicdb.gui.step.ConnectingHazelcastStep;
 import com.hazelcast.example.musicdb.gui.step.DataSetSelectorStep;
 import com.hazelcast.example.musicdb.gui.step.ExecuteDataSetDownloadStep;
+import com.hazelcast.example.musicdb.gui.step.ExtractDataSetStep;
+import com.hazelcast.example.musicdb.gui.step.HazelcastConnectionStep;
+import com.hazelcast.example.musicdb.gui.step.ParsingStep;
 import com.hazelcast.example.musicdb.gui.step.SearchLocallyFirstQuestionStep;
 import com.hazelcast.example.musicdb.gui.step.SearchingPrecachedDownloadStep;
 import com.hazelcast.example.musicdb.gui.step.TestChecksumStep;
-import com.hazelcast.transaction.impl.Transaction;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,16 +46,24 @@ public class AutoLoader {
             throw new Exception("Couldn't allocate terminal");
         }
 
+        StepTransition checksum = new StepTransition(new TestChecksumStep());
+        checksum.addTransition("success", new ExtractDataSetStep())
+            .addTransition(new HazelcastConnectionStep())
+            .addTransition(new ConnectingHazelcastStep())
+            .addTransition(new ParsingStep());
+
+        checksum.addTransition("error", null); // TODO Error window
+
         StepTransition search = new StepTransition("search", new SearchingPrecachedDownloadStep());
         StepTransition select = search.addTransition("select", new DataSetSelectorStep());
-        select.addTransition("default", new TestChecksumStep());
+        select.addTransition(checksum);
 
         StepTransition startDownload = new StepTransition("download", new AvailableDataSetStep());
-        StepTransition selectDataSet = startDownload.addTransition("default", new DataSetSelectorStep());
-        StepTransition download = selectDataSet.addTransition("default", new ExecuteDataSetDownloadStep());
-        download.addTransition("default", new TestChecksumStep());
+        startDownload.addTransition(new DataSetSelectorStep())
+            .addTransition(new ExecuteDataSetDownloadStep())
+            .addTransition(checksum);
 
-        StepTransition start = new StepTransition("default", new SearchLocallyFirstQuestionStep());
+        StepTransition start = new StepTransition(new SearchLocallyFirstQuestionStep());
         start.addTransition(search);
         start.addTransition(startDownload);
 

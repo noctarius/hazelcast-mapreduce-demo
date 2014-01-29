@@ -16,32 +16,24 @@
 
 package com.hazelcast.example.musicdb.parsers;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class ParserResult<T> {
+class CollectingParserTarget<T> extends ParserTarget<T> {
 
-    private final int elementCount;
-    private final List<T> result;
-    private final Class<T> type;
+    private final List<T> elements = new ArrayList<>(1000000);
 
-    public ParserResult(int elementCount, List<T> result, Class<T> type) {
-        this.elementCount = elementCount;
-        this.result = result;
-        this.type = type;
-    }
-
-    public int getElementCount() {
-        return elementCount;
-    }
-
-    public List<T> getResult() {
-        return result;
+    CollectingParserTarget(boolean dryRun) {
+        super(dryRun);
     }
 
     @Override
-    public String toString() {
-        return "{ elementCount: " + getElementCount()
-                + ", type: " + type.getSimpleName() + " }";
+    protected void onNewElement(T element) {
+        elements.add(element);
     }
 
+    @Override
+    public List<T> getElements() {
+        return elements;
+    }
 }

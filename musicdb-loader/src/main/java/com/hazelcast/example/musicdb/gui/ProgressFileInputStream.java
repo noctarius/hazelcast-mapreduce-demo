@@ -23,11 +23,17 @@ import java.io.IOException;
 
 public class ProgressFileInputStream extends FileInputStream {
 
+    private final ProgressListener listener;
     private final long length;
     private long pos;
 
     public ProgressFileInputStream(File file) throws FileNotFoundException {
+        this(file, null);
+    }
+
+    public ProgressFileInputStream(File file, ProgressListener listener) throws FileNotFoundException {
         super(file);
+        this.listener = listener;
         this.length = file.length();
     }
 
@@ -35,6 +41,7 @@ public class ProgressFileInputStream extends FileInputStream {
     public int read() throws IOException {
         int length = super.read();
         if (length > -1) pos += length;
+        notifyAction(length);
         return length;
     }
 
@@ -42,6 +49,7 @@ public class ProgressFileInputStream extends FileInputStream {
     public int read(byte[] b) throws IOException {
         int length = super.read(b);
         if (length > -1) pos += length;
+        notifyAction(length);
         return length;
     }
 
@@ -49,6 +57,7 @@ public class ProgressFileInputStream extends FileInputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         int length = super.read(b, off, len);
         if (length > -1) pos += length;
+        notifyAction(length);
         return length;
     }
 
@@ -56,6 +65,7 @@ public class ProgressFileInputStream extends FileInputStream {
     public long skip(long n) throws IOException {
         long length = super.skip(n);
         if (length > -1) pos += length;
+        notifyAction(length);
         return length;
     }
 
@@ -65,5 +75,15 @@ public class ProgressFileInputStream extends FileInputStream {
 
     public long getPosition() {
         return pos;
+    }
+
+    private void notifyAction(long length) {
+        if (listener != null) {
+            listener.onProgress(length, pos, length);
+        }
+    }
+
+    public static interface ProgressListener {
+        void onProgress(long readBytes, long position, long length);
     }
 }
